@@ -58,7 +58,7 @@ For lab results, it highlights abnormal values and explains what they mean for t
 
 ### 2.2 Technology Stack and Tooling Decisions
 
-**LLM:** OpenAI GPT-4o for generation and GPT-4o-mini for retrieval - Provides excellent reasoning capabilities for medical analysis and cost-effective retrieval.
+**LLM:** OpenAI GPT-4o-mini for all operations (generation, retrieval, evaluation) - Provides cost-effective and fast medical analysis with good reasoning capabilities for medical queries.
 
 **Embedding Model:** OpenAI text-embedding-3-small - Offers strong semantic understanding for medical terminology and concepts.
 
