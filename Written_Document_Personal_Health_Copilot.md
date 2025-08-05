@@ -58,23 +58,23 @@ For lab results, it highlights abnormal values and explains what they mean for t
 
 ### 2.2 Technology Stack and Tooling Decisions
 
-**LLM:** OpenAI GPT-4o-mini for all operations (generation, retrieval, evaluation) - Provides cost-effective and fast medical analysis with good reasoning capabilities for medical queries.
+• **LLM:** OpenAI GPT-4o-mini for all operations (generation, retrieval, evaluation) - Provides cost-effective and fast medical analysis with good reasoning capabilities for medical queries.
 
-**Embedding Model:** OpenAI text-embedding-3-small - Offers strong semantic understanding for medical terminology and concepts.
+• **Embedding Model:** OpenAI text-embedding-3-small - Offers strong semantic understanding for medical terminology and concepts.
 
-**Orchestration:** LangGraph for agentic workflows - Enables multi-step reasoning for complex health queries and medication analysis.
+• **Orchestration:** LangGraph for agentic workflows - Enables multi-step reasoning for complex health queries and medication analysis.
 
-**Retrieval System:** BM25 retriever for in-memory document search - Provides fast keyword-based retrieval for medical documents without requiring a separate vector database.
+• **Retrieval System:** BM25 retriever for in-memory document search - Provides fast keyword-based retrieval for medical documents without requiring a separate vector database.
 
-**Monitoring:** LangSmith for tracing and evaluation - Tracks agent performance, model usage, and provides insights for healthcare accuracy.
+• **Monitoring:** LangSmith for tracing and evaluation - Tracks agent performance, model usage, and provides insights for healthcare accuracy.
 
-**Evaluation:** RAGAS framework for quantitative assessment - Measures faithfulness, relevance, and precision critical for medical applications.
+• **Evaluation:** RAGAS framework for quantitative assessment - Measures faithfulness, relevance, and precision critical for medical applications.
 
-**User Interface:** Next.js frontend with FastAPI backend - Provides modern, responsive chat interface with scalable architecture for production deployment.
+• **User Interface:** Next.js frontend with FastAPI backend - Provides modern, responsive chat interface with scalable architecture for production deployment.
 
-**Serving & Inference:** FastAPI backend with async processing - Provides scalable API endpoints for real-time medical query processing and response generation.
+• **Serving & Inference:** FastAPI backend with async processing - Provides scalable API endpoints for real-time medical query processing and response generation.
 
-**External APIs:** Tavily Search API and ArXiv API - Provides real-time medical information and research paper access.
+• **External APIs:** Tavily Search API and ArXiv API - Provides real-time medical information and research paper access.
 
 ### 2.3 Agent Architecture and Agentic Reasoning Usage
 
