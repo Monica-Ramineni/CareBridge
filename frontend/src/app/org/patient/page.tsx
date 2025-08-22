@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { apiUrl } from "../../lib/api";
 import Link from "next/link";
 
 export default function PatientPage() {
@@ -20,7 +21,7 @@ export default function PatientPage() {
 
   useEffect(() => {
     // Load demo patients for UI (local backend)
-    fetch("http://localhost:8000/v1/demo/patients")
+    fetch(apiUrl("/v1/demo/patients"))
       .then((r) => r.json())
       .then((list) => {
         setPatients(list);
@@ -33,7 +34,7 @@ export default function PatientPage() {
 
   useEffect(() => {
     if (!activePatientId) return;
-    fetch(`http://localhost:8000/v1/demo/patients/${activePatientId}`)
+    fetch(apiUrl(`/v1/demo/patients/${activePatientId}`))
       .then((r) => r.json())
       .then(setDemoPatient)
       .catch(() => {});
@@ -113,7 +114,7 @@ export default function PatientPage() {
                   history.push({ sender: "user", text: parts.join('\n') });
                 }
                 const conversation_history = history;
-                const resp = await fetch("http://localhost:8000/v1/patient/summary", {
+                const resp = await fetch(apiUrl("/v1/patient/summary"), {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({ conversation_history, session_id: sessionId || undefined }),
@@ -183,7 +184,7 @@ export default function PatientPage() {
               try {
                 const formData = new FormData();
                 for (let i = 0; i < files.length; i++) formData.append('files', files[i]);
-                const resp = await fetch('http://localhost:8000/upload-lab-results', { method: 'POST', body: formData });
+                const resp = await fetch(apiUrl('/upload-lab-results'), { method: 'POST', body: formData });
                 const data = await resp.json();
                 setSessionId(data.session_id);
                 setUploadedFiles(Array.from(files));
@@ -231,7 +232,7 @@ export default function PatientPage() {
               onClick={async () => {
                 if (!sessionId) return;
                 setLabResult(null);
-                const resp = await fetch('http://localhost:8000/v1/labs/interpret', {
+                const resp = await fetch(apiUrl('/v1/labs/interpret'), {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ session_id: sessionId, question: labQuestion || undefined })

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { apiUrl } from "../lib/api";
 
 
 
@@ -156,7 +157,7 @@ export default function Home() {
     try {
       setConnectionStatus("connecting");
       
-      const response = await fetch('http://localhost:8000/health', {
+      const response = await fetch(apiUrl('/health'), {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -264,7 +265,7 @@ export default function Home() {
   const generateConversationTitle = async (messages: Message[]): Promise<string> => {
     try {
       // Try LLM-powered title generation first
-      const response = await fetch('http://localhost:8000/generate-title', {
+      const response = await fetch(apiUrl('/generate-title'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -534,7 +535,7 @@ export default function Home() {
         formData.append('files', files[i]);
       }
       
-      const response = await fetch('http://localhost:8000/upload-lab-results', {
+      const response = await fetch(apiUrl('/upload-lab-results'), {
         method: 'POST',
         body: formData
       });
@@ -599,7 +600,7 @@ export default function Home() {
       }
       
       // Use POST /chat endpoint
-      const response = await fetch('http://localhost:8000/chat', {
+      const response = await fetch(apiUrl('/chat'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

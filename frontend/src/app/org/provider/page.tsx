@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { apiUrl } from "../../lib/api";
 import Link from "next/link";
 
 interface Msg { sender: "user" | "assistant"; text: string }
@@ -14,7 +15,7 @@ export default function ProviderPage() {
   const [template, setTemplate] = useState<string>("general");
 
   useEffect(() => {
-    fetch("http://localhost:8000/v1/demo/patients")
+    fetch(apiUrl("/v1/demo/patients"))
       .then((r) => r.json())
       .then((list) => {
         setPatients(list);
@@ -24,7 +25,7 @@ export default function ProviderPage() {
 
   useEffect(() => {
     if (!selected) return;
-    fetch(`http://localhost:8000/v1/demo/patients/${selected}`)
+    fetch(apiUrl(`/v1/demo/patients/${selected}`))
       .then((r) => r.json())
       .then(setDetail);
   }, [selected]);
@@ -33,7 +34,7 @@ export default function ProviderPage() {
     const messages: Msg[] = [
       { sender: "user", text: `Template: ${template}. Summarize patient ${selected} visit and create HPI/Assessment/Plan.` },
     ];
-    const resp = await fetch("http://localhost:8000/v1/provider/note", {
+    const resp = await fetch(apiUrl("/v1/provider/note"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ messages }),
