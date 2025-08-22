@@ -1,9 +1,9 @@
 [project]
-name = "personal-health-copilot"
+name = "care-bridge"
 version = "0.1.0"
-description = "Personal Health Copilot with RAG and medical tools"
+description = "CareBridge with RAG and medical tools"
 authors = [
-    {name = "Your Name", email = "your.email@example.com"}
+    {name = "Monica Ramineni", email = "raminenimonica.c@gmail.com"}
 ]
 dependencies = [
     "fastapi==0.104.1",
@@ -37,5 +37,6 @@ dependencies = [
     "python-multipart>=0.0.6",
     "PyPDF2>=3.0.0",
     "python-docx>=1.1.0",
-    "Pillow>=10.0.0"
+    "Pillow>=10.0.0",
+    "tiktoken>=0.7.0"
 ] 
