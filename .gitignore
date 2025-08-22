@@ -144,6 +144,9 @@ data/
 *.json
 *.xml
 
+# Allow root Vercel config even though *.json is ignored above
+!vercel.json
+
 # Jupyter Notebook
 .ipynb_checkpoints
 
