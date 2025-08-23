@@ -1,9 +1,0 @@
-[project]
-name = "care-bridge"
-version = "0.1.0"
-description = "CareBridge with RAG and medical tools"
-authors = [
-    {name = "Monica Ramineni", email = "raminenimonica.c@gmail.com"}
-]
-# Intentionally leave dependencies empty in pyproject to avoid uv lock conflicts on Railway.
-dependencies = [] 
