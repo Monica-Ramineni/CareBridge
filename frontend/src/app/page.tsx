@@ -620,10 +620,15 @@ export default function Home() {
       
       if (response.ok) {
         const data = await response.json();
-        const citations = extractCitations(data.response || "");
+        // Be robust to different payload shapes; fall back if empty
+        const rawText: string = (data && (data.response || data.content || data.message)) || "";
+        const finalText = rawText && rawText.trim().length > 0
+          ? rawText
+          : (data?.error ? `Sorry, there was an issue: ${String(data.error)}` : "I'm sorry, I couldn't generate a response right now. Please try again.");
+        const citations = extractCitations(finalText);
         const assistantResponse: Message = {
           id: Date.now() + 1,
-          text: data.response,
+          text: finalText,
           sender: 'assistant',
           timestamp: new Date().toLocaleTimeString(),
           citations,
