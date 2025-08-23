@@ -11,7 +11,8 @@ export default function ProviderPage() {
   const [selected, setSelected] = useState<string>("");
   const [detail, setDetail] = useState<Record<string, any> | null>(null);
   const [note, setNote] = useState<string>("");
-  const [visitNotes, setVisitNotes] = useState<string>("");
+  // Store visit notes per patient id so switching patients preserves their notes
+  const [visitNotesByPatient, setVisitNotesByPatient] = useState<Record<string, string>>({});
   const [copied, setCopied] = useState<boolean>(false);
   const [template, setTemplate] = useState<string>("general");
 
@@ -41,7 +42,7 @@ export default function ProviderPage() {
       body: JSON.stringify({
         messages,
         snapshot: detail,
-        notes: visitNotes || "",
+        notes: (selected && visitNotesByPatient[selected]) || "",
       }),
     });
     const data = await resp.json();
@@ -123,8 +124,11 @@ export default function ProviderPage() {
           <div className="mt-3">
             <label className="block text-sm text-gray-700 mb-1">Visit notes (HPI context)</label>
             <textarea
-              value={visitNotes}
-              onChange={(e) => setVisitNotes(e.target.value)}
+              value={(selected && visitNotesByPatient[selected]) || ""}
+              onChange={(e) => {
+                const v = e.target.value;
+                setVisitNotesByPatient((prev) => ({ ...(prev || {}), [selected || ""]: v }));
+              }}
               placeholder="e.g., Patient reports improved breathlessness; denies chest pain."
               rows={3}
               className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-900"
