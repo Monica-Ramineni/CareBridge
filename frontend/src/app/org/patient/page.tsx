@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { apiUrl } from "../../lib/api";
+import { apiUrl } from "@/lib/api";
 import Link from "next/link";
 
 export default function PatientPage() {
