@@ -5,38 +5,5 @@ description = "CareBridge with RAG and medical tools"
 authors = [
     {name = "Monica Ramineni", email = "raminenimonica.c@gmail.com"}
 ]
-dependencies = [
-    "fastapi==0.104.1",
-    "uvicorn[standard]==0.24.0",
-    "websockets==12.0",
-    "python-dotenv==1.0.0",
-    "pydantic>=2.7.4",
-    "langchain>=0.3.26",
-    "langchain-community>=0.3.27",
-    "langchain-core>=0.3.67",
-    "langchain-openai>=0.3.27",
-    "langchain-qdrant>=0.2.0",
-    "langgraph>=0.5.1",
-    "langsmith>=0.4.4",
-    "ragas==0.2.10",
-    "evaluate>=0.4.0",
-    "langchain-cohere==0.4.4",
-    "cohere>=5.12.0,<5.13.0",
-    "rank-bm25>=0.2.2",
-    "langchain-text-splitters>=0.3.0",
-    "qdrant-client>=1.13.2",
-    "pymupdf>=1.26.3",
-    "unstructured>=0.14.8",
-    "nltk==3.8.1",
-    "tavily-python>=0.7.9",
-    "arxiv>=2.2.0",
-    "pandas>=2.3.0",
-    "numpy>=2.2.2",
-    "rapidfuzz>=3.0.0",
-    "requests>=2.31.0",
-    "python-multipart>=0.0.6",
-    "PyPDF2>=3.0.0",
-    "python-docx>=1.1.0",
-    "Pillow>=10.0.0",
-    "tiktoken>=0.7.0"
-] 
+# Intentionally leave dependencies empty in pyproject to avoid uv lock conflicts on Railway.
+dependencies = [] 
