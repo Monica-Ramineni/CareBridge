@@ -746,6 +746,7 @@ export default function Home() {
   }
 
   const statusDisplay = getStatusDisplay();
+  const showDiagnostics = (process.env.NEXT_PUBLIC_SHOW_DIAGNOSTICS === 'true') || debugMode;
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -973,13 +974,15 @@ export default function Home() {
             </span>
             <span className={`w-3 h-3 ${statusDisplay.dotColor} rounded-full ${connectionStatus === "connecting" ? "animate-pulse" : ""}`} />
             <span className="text-sm text-gray-600">{statusDisplay.text}</span>
-            <button
-              onClick={runDiagnostics}
-              className="ml-2 px-2 py-1 text-[11px] bg-gray-100 text-gray-800 rounded hover:bg-gray-200"
-              title="Run connectivity diagnostics"
-            >
-              Check
-            </button>
+            {showDiagnostics && (
+              <button
+                onClick={runDiagnostics}
+                className="ml-2 px-2 py-1 text-[11px] bg-gray-100 text-gray-800 rounded hover:bg-gray-200"
+                title="Run connectivity diagnostics"
+              >
+                Check
+              </button>
+            )}
           </div>
         </header>
 

@@ -47,22 +47,19 @@ export default function PatientPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <section className="bg-white border border-gray-200 rounded-lg p-4">
           <h2 className="font-semibold text-gray-900 mb-2">Patients</h2>
-          <ul className="text-sm text-gray-700 space-y-2">
-            {patients.map((p) => (
-              <li key={p.id} className="flex items-center justify-between">
-                <button
-                  className={`text-left w-full px-2 py-1 rounded border ${
-                    activePatientId === p.id
-                      ? 'bg-blue-50 border-blue-200 text-gray-900'
-                      : 'bg-white border-gray-200 hover:bg-gray-50 text-gray-800'
-                  }`}
-                  onClick={() => setActivePatientId(p.id)}
-                >
-                  {p.name}
-                </button>
-              </li>
-            ))}
-          </ul>
+          {patients.length > 0 ? (
+            <select
+              className="w-full border border-gray-300 rounded px-2 py-2 text-sm text-gray-900 bg-white"
+              value={activePatientId || ''}
+              onChange={(e) => setActivePatientId(e.target.value)}
+            >
+              {patients.map((p) => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+          ) : (
+            <div className="text-sm text-gray-500">No patients</div>
+          )}
         </section>
 
         <section className="bg-white border border-gray-200 rounded-lg p-4 lg:col-span-2">
