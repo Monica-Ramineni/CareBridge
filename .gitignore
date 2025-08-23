@@ -16,8 +16,8 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
+/lib/
+/lib64/
 parts/
 sdist/
 var/
@@ -138,11 +138,8 @@ jspm_packages/
 tmp/
 temp/
 
-# Data files
+# Data files (keep project JSON files tracked; only ignore data directory contents)
 data/
-*.csv
-*.json
-*.xml
 
 # Allow root Vercel config even though *.json is ignored above
 !vercel.json
