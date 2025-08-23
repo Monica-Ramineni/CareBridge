@@ -19,6 +19,12 @@ interface Message {
   triage?: { level: "routine" | "urgent" | "emergency"; reasons: string[] };
   cost?: { estimated_cost?: number; tokens?: number };
   latency?: number;
+  classification?:
+    | "HEALTH_QUESTION"
+    | "FOLLOW_UP"
+    | "NON_HEALTH_QUESTION"
+    | "GREETING"
+    | "CONVERSATION_RESUMPTION";
 }
 
 interface Conversation {
@@ -675,6 +681,7 @@ export default function Home() {
           triage: data.triage || undefined,
           cost: data.cost || undefined,
           latency: typeof data.latency === 'number' ? data.latency : undefined,
+          classification: data.classification as Message['classification'] | undefined,
         };
         const finalMessages = [...updatedMessages, assistantResponse];
         setMessages(finalMessages);
@@ -955,7 +962,14 @@ export default function Home() {
             {messages.map((message, index) => {
               const previousUser = [...messages].slice(0, index).reverse().find(m => m.sender === 'user');
               const previousUserText = previousUser ? previousUser.text : '';
-              const showTriage = message.sender === 'assistant' && !!message.triage && !isGreetingMessage(previousUserText) && isLikelyHealthRelated(previousUserText);
+              const showTriage = message.sender === 'assistant'
+                && !!message.triage
+                && (
+                  message.classification === 'HEALTH_QUESTION' ||
+                  message.classification === 'FOLLOW_UP' ||
+                  // Fallback to previous heuristic if classification missing
+                  (!message.classification && !isGreetingMessage(previousUserText) && isLikelyHealthRelated(previousUserText))
+                );
               const triage = message.triage;
               const triageLevel = triage?.level;
               const triageReasons = triage?.reasons || [];

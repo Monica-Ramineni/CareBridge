@@ -16,6 +16,7 @@ import io
 import time
 import re
 import hashlib
+import requests
 
 # Load environment variables
 load_dotenv()
@@ -172,6 +173,49 @@ app.add_middleware(
 # -----------------------------
 GDPR_MODE = os.getenv("GDPR_MODE", "false").lower() in ("1", "true", "yes")
 COMPLIANCE_MODE = os.getenv("COMPLIANCE_MODE", "false").lower() in ("1", "true", "yes")
+
+# -----------------------------
+# Trusted sources mode (allow-list + freshness)
+# -----------------------------
+TRUSTED_SOURCES_MODE = os.getenv("TRUSTED_SOURCES_MODE", "false").lower() in ("1", "true", "yes")
+_default_domains = [
+    "mayoclinic.org",
+    "medlineplus.gov",
+    "cdc.gov",
+    "nih.gov",
+    "fda.gov",
+    "who.int",
+]
+TRUSTED_ALLOWED_DOMAINS = [
+    d.strip().lower() for d in os.getenv("TRUSTED_ALLOWED_DOMAINS", ",".join(_default_domains)).split(",") if d.strip()
+]
+TRUSTED_MAX_YEARS = int(os.getenv("TRUSTED_MAX_YEARS", "5"))
+
+def _extract_domain(url: str) -> str:
+    try:
+        from urllib.parse import urlparse
+        netloc = urlparse(url).netloc.lower()
+        return netloc.split(":")[0]
+    except Exception:
+        return ""
+
+def _is_domain_allowed(url: str) -> bool:
+    if not TRUSTED_SOURCES_MODE:
+        return True
+    domain = _extract_domain(url)
+    return any(domain.endswith(allowed) for allowed in TRUSTED_ALLOWED_DOMAINS)
+
+def _parse_markdown_links(markdown_text: str) -> List[Dict[str, str]]:
+    links = []
+    try:
+        pattern = re.compile(r"\[([^\]]+)\]\(([^\)]+)\)")
+        for match in pattern.finditer(markdown_text or ""):
+            text = match.group(1)
+            url = match.group(2)
+            links.append({"text": text, "url": url, "domain": _extract_domain(url)})
+    except Exception:
+        pass
+    return links
 
 def _redact_pii(text: str) -> str:
     """Lightweight PII redaction (emails, phones, simple IDs). Non-destructive; demo-safe.
@@ -417,11 +461,21 @@ def web_search_medical_info(
     query: str
 ):
     """Search the web for current medical information, treatments, and health research"""
-    search_tool = TavilySearchResults(max_results=3)
+    search_tool = TavilySearchResults(max_results=5)
     results = search_tool.invoke(query)
+    # Filter by allow-list when trusted mode is on
+    usable = [r for r in results if _is_domain_allowed(r.get("url", ""))] if TRUSTED_SOURCES_MODE else results
+    if not usable:
+        return (
+            f"No trusted results found for '{query}'."
+            if TRUSTED_SOURCES_MODE
+            else f"No results found for '{query}'."
+        )
     formatted_results = []
-    for result in results:
-        formatted_results.append(f"Title: {result['title']}\nURL: {result['url']}\nContent: {result['content']}\n")
+    for result in usable[:3]:
+        formatted_results.append(
+            f"Title: {result.get('title','')}\nURL: {result.get('url','')}\nContent: {result.get('content','')}\n"
+        )
     return f"Web search results for '{query}':\n" + "\n".join(formatted_results)
 
 @tool
@@ -436,8 +490,39 @@ def search_medical_research(
     )
     results = []
     for result in search.results():
-        results.append(f"Title: {result.title}\nAuthors: {', '.join([author.name for author in result.authors])}\nAbstract: {result.summary[:300]}...\nURL: {result.entry_id}\n")
+        label = " [Preprint]" if TRUSTED_SOURCES_MODE else ""
+        results.append(f"Title: {result.title}{label}\nAuthors: {', '.join([author.name for author in result.authors])}\nAbstract: {result.summary[:300]}...\nURL: {result.entry_id}\n")
     return f"Medical research results for '{query}':\n" + "\n".join(results)
+
+@tool
+def search_pubmed(query: str):
+    """Search PubMed (peer-reviewed). Returns up to 3 citations with title and URL."""
+    try:
+        params = {"db": "pubmed", "term": query, "retmax": 3}
+        es = requests.get(
+            "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi",
+            params={**params, "retmode": "json"},
+            timeout=10,
+        )
+        ids = (es.json().get("esearchresult", {}).get("idlist", []) if es.ok else [])
+        if not ids:
+            return "No PubMed results."
+        summ = requests.get(
+            "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi",
+            params={"db": "pubmed", "id": ",".join(ids), "retmode": "json"},
+            timeout=10,
+        )
+        items = (summ.json().get("result", {}) if summ.ok else {})
+        formatted = []
+        for pid in ids:
+            m = items.get(pid, {})
+            title = m.get("title", "")
+            year = (m.get("pubdate", "").split(" ") or [""])[0]
+            url = f"https://pubmed.ncbi.nlm.nih.gov/{pid}/"
+            formatted.append(f"Title: {title} ({year})\nURL: {url}\n")
+        return "PubMed results:\n" + "\n".join(formatted)
+    except Exception as e:
+        return f"PubMed error: {str(e)}"
 
 @tool
 def analyze_symptoms(
@@ -557,7 +642,7 @@ def initialize_medical_system():
     class AgentState(TypedDict):
         messages: Annotated[list, add_messages]
     
-    # Tool belt with all 6 medical tools
+    # Tool belt with all medical tools (PubMed added)
     tool_belt = [
         retrieve_medical_information, 
         web_search_medical_info, 
@@ -565,15 +650,17 @@ def initialize_medical_system():
         analyze_symptoms, 
         check_drug_interactions, 
         interpret_lab_results,
-        analyze_uploaded_lab_results
+        analyze_uploaded_lab_results,
+        search_pubmed,
     ]
     
     llm_with_tools = llm.bind_tools(tool_belt)
     
     def call_model(state):
         messages = state["messages"]
-        # Add system message to instruct LLM to use markdown links
-        system_message = SystemMessage(content="You are a helpful medical assistant. When providing links or references, use markdown format: [Link Text](URL). Do NOT use HTML tags like <a href=\"...\">. Keep responses clean and readable.")
+        # Add system message to instruct LLM to use markdown links, and prefer trusted sources when enabled
+        trust_note = " When external sources are needed, prefer PubMed/Medline and approved domains (mayoclinic.org, medlineplus.gov, cdc.gov, nih.gov, fda.gov, who.int). Label arXiv as preprint. If no trusted recent source (last 5 years) is available, say so." if TRUSTED_SOURCES_MODE else ""
+        system_message = SystemMessage(content="You are a helpful medical assistant. When providing links or references, use markdown format: [Link Text](URL). Do NOT use HTML tags like <a href=\"...\">. Keep responses clean and readable." + trust_note)
         messages_with_system = [system_message] + messages
         response = llm_with_tools.invoke(messages_with_system)
         return {"messages": [response]}
@@ -755,7 +842,7 @@ async def chat_endpoint(chat_message: ChatMessage, request: Request):
                 final_response_content = "Hello! How can I help you with your health today?"
             elif question_category == "CONVERSATION_RESUMPTION":
                 # Continue with the previous health conversation context
-                system_message = SystemMessage(content="You are a helpful medical assistant. When providing links or references, use markdown format: [Link Text](URL). Do NOT use HTML tags like <a href=\"...\">. Keep responses clean and readable.")
+                system_message = SystemMessage(content="You are a helpful medical assistant. When providing links or references, use markdown format: [Link Text](URL). Do NOT use HTML tags like <a href=\"...\">. Keep responses clean and readable." + (" Prefer PubMed/approved domains when using web sources." if TRUSTED_SOURCES_MODE else ""))
                 messages_with_system = [system_message] + messages
                 final_response = compiled_health_graph.invoke({"messages": messages_with_system})
                 final_message = final_response["messages"][-1]
@@ -773,7 +860,7 @@ async def chat_endpoint(chat_message: ChatMessage, request: Request):
                 Topic:
                 """
                 
-                system_message = SystemMessage(content="You are a helpful medical assistant. When providing links or references, use markdown format: [Link Text](URL). Do NOT use HTML tags like <a href=\"...\">. Keep responses clean and readable.")
+                system_message = SystemMessage(content="You are a helpful medical assistant. When providing links or references, use markdown format: [Link Text](URL). Do NOT use HTML tags like <a href=\"...\">. Keep responses clean and readable." + (" Prefer PubMed/approved domains when using web sources." if TRUSTED_SOURCES_MODE else ""))
                 topic_response = compiled_health_graph.invoke({
                     "messages": [system_message, HumanMessage(content=topic_extraction_prompt)]
                 })
@@ -839,7 +926,7 @@ async def chat_endpoint(chat_message: ChatMessage, request: Request):
                     else:
                         final_response_content = cleaned_response
                 
-                system_message = SystemMessage(content="You are a helpful medical assistant. When providing links or references, use markdown format: [Link Text](URL). Do NOT use HTML tags like <a href=\"...\">. Keep responses clean and readable.")
+                system_message = SystemMessage(content="You are a helpful medical assistant. When providing links or references, use markdown format: [Link Text](URL). Do NOT use HTML tags like <a href=\"...\">. Keep responses clean and readable." + (" Prefer PubMed/approved domains when using web sources." if TRUSTED_SOURCES_MODE else ""))
                 messages_with_system = [system_message] + messages
                 final_response = compiled_health_graph.invoke({"messages": messages_with_system})
                 final_message = final_response["messages"][-1]
@@ -910,12 +997,17 @@ async def chat_endpoint(chat_message: ChatMessage, request: Request):
         triage = classify_triage_level(chat_message.message, lab_context)
         # Minimal audit trail
         _audit_log("chat", request, extra={"redacted": (GDPR_MODE or COMPLIANCE_MODE), "msg_len": len(original_message or "")})
+        sources = _parse_markdown_links(final_response_content)
+        if TRUSTED_SOURCES_MODE:
+            sources = [s for s in sources if _is_domain_allowed(s.get("url", ""))]
         response_payload = {
             "response": final_response_content,
             "activities": activities,
             "cost": {"tokens": len(final_response_content.split()), "estimated_cost": 0.002},
             "latency": 1.2,
             "triage": triage,
+            "sources": sources,
+            "classification": question_category,
         }
         # Store in cache
         _cache_set(cache_key, response_payload)
