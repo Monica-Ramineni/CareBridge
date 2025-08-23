@@ -304,6 +304,8 @@ class LabsInterpretResponse(BaseModel):
 class ProviderNoteRequest(BaseModel):
     messages: List[ConversationMessage]
     sections: Optional[List[str]] = None  # e.g., ["HPI", "Assessment", "Plan"]
+    snapshot: Optional[Dict[str, Any]] = None  # demo patient snapshot (problems/medications/last_labs)
+    notes: Optional[str] = None  # visit notes from provider UI
 
 class ProviderNoteResponse(BaseModel):
     note: Dict[str, str]
@@ -1261,15 +1263,22 @@ async def provider_note(payload: ProviderNoteRequest):
     try:
         sections = payload.sections or ["HPI", "Assessment", "Plan"]
         convo_text = "\n".join([f"{m.sender}: {m.text}" for m in payload.messages])
+        snapshot_text = "" if not payload.snapshot else (
+            f"Problems: {', '.join(payload.snapshot.get('problems', []))}\n"
+            f"Medications: {', '.join(payload.snapshot.get('medications', []))}\n"
+            f"Last Labs: {', '.join([f"{k}: {v}" for k, v in (payload.snapshot.get('last_labs', {}) or {}).items()])}"
+        )
+        visit_notes = payload.notes or ""
         instruction = (
             "Return a JSON object with keys matching sections (e.g., HPI, Assessment, Plan). "
-            "Respond with JSON only."
+            "Use ONLY the provided snapshot and visit notes. Do NOT invent symptoms or improvements. "
+            "If a field is not supported by the notes/snapshot, keep it concise and factual. Respond with JSON only."
         )
-        system_message = SystemMessage(content="You are a clinical note assistant. Output JSON only.")
+        system_message = SystemMessage(content="You are a clinical note assistant. Output JSON only. Be strictly factual to provided inputs.")
         llm_resp = compiled_health_graph.invoke({
             "messages": [
                 system_message,
-                HumanMessage(content=f"{instruction}\n\nSECTIONS: {', '.join(sections)}\n\nCONVERSATION:\n{convo_text}")
+                HumanMessage(content=f"{instruction}\n\nSECTIONS: {', '.join(sections)}\n\nSNAPSHOT:\n{snapshot_text}\n\nVISIT_NOTES:\n{visit_notes}\n\nCONVERSATION:\n{convo_text}")
             ]
         })
         content = llm_resp["messages"][-1].content

@@ -11,6 +11,7 @@ export default function ProviderPage() {
   const [selected, setSelected] = useState<string>("");
   const [detail, setDetail] = useState<Record<string, any> | null>(null);
   const [note, setNote] = useState<string>("");
+  const [visitNotes, setVisitNotes] = useState<string>("");
   const [copied, setCopied] = useState<boolean>(false);
   const [template, setTemplate] = useState<string>("general");
 
@@ -37,7 +38,11 @@ export default function ProviderPage() {
     const resp = await fetch(apiUrl("/v1/provider/note"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages }),
+      body: JSON.stringify({
+        messages,
+        snapshot: detail,
+        notes: visitNotes || "",
+      }),
     });
     const data = await resp.json();
     setNote(data.markdown || "");
@@ -114,6 +119,17 @@ export default function ProviderPage() {
             <button onClick={generateNote} className="px-3 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700">Generate HPI/Assessment/Plan</button>
             <button onClick={copyNote} disabled={!note} className="px-3 py-2 text-sm bg-gray-100 text-gray-800 rounded hover:bg-gray-200 disabled:opacity-50">{copied ? 'Copied!' : 'Copy'}</button>
             <button onClick={downloadNote} disabled={!note} className="px-3 py-2 text-sm bg-gray-100 text-gray-800 rounded hover:bg-gray-200 disabled:opacity-50">Download .md</button>
+          </div>
+          <div className="mt-3">
+            <label className="block text-sm text-gray-700 mb-1">Visit notes (HPI context)</label>
+            <textarea
+              value={visitNotes}
+              onChange={(e) => setVisitNotes(e.target.value)}
+              placeholder="e.g., Patient reports improved breathlessness; denies chest pain."
+              rows={3}
+              className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-900"
+            />
+            <p className="text-[11px] text-gray-500 mt-1">Only Snapshot + these notes will be used. No assumptions.</p>
           </div>
           <pre className="mt-3 text-xs whitespace-pre-wrap text-gray-800">{note}</pre>
         </section>
