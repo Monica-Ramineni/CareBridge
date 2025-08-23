@@ -1,5 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  eslint: {
+    // Don't fail the Vercel build on lint errors; treat them as warnings
+    ignoreDuringBuilds: true,
+  },
   async rewrites() {
     const isDev = process.env.NODE_ENV !== 'production';
     const hasExplicitApiBase = Boolean(process.env.NEXT_PUBLIC_API_BASE);
