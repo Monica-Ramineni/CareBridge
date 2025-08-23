@@ -49,6 +49,7 @@ export default function Home() {
   const [isUploading, setIsUploading] = useState(false);
   const [copiedRefsFor, setCopiedRefsFor] = useState<number | null>(null);
   const [debugMode, setDebugMode] = useState(false);
+  const [diagStatus, setDiagStatus] = useState<string>("");
 
   // Add loading message cycling
   const loadingMessages = [
@@ -243,6 +244,39 @@ export default function Home() {
         return { text: "Error", color: "bg-red-500", dotColor: "bg-red-500" };
       default:
         return { text: "Unknown", color: "bg-gray-500", dotColor: "bg-gray-500" };
+    }
+  };
+
+  // Simple diagnostics: check /health and a minimal /chat request
+  const runDiagnostics = async () => {
+    try {
+      setDiagStatus("Running diagnostics…");
+      const h = await fetch(apiUrl('/health'));
+      const hOk = h.ok;
+      let chatOk = false;
+      let chatNote = "";
+      try {
+        const c = await fetch(apiUrl('/chat'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: 'ping', user_id: 'diag', conversation_history: [] }),
+        });
+        const data = await c.json().catch(() => ({}));
+        chatOk = c.ok && Boolean((data && (data.response || data.content || data.message)));
+        if (!chatOk && data?.error) chatNote = String(data.error);
+      } catch (e: any) {
+        chatNote = String(e?.message || e);
+      }
+      const result = `Health: ${hOk ? 'OK' : 'FAIL'} • Chat: ${chatOk ? 'OK' : 'FAIL'}${chatNote ? ' — ' + chatNote : ''}`;
+      setDiagStatus(result);
+      // Also drop into the chat stream for visibility
+      const diagMsg: Message = { id: Date.now(), text: `Diagnostics → ${result}` , sender: 'assistant', timestamp: new Date().toLocaleTimeString() };
+      setMessages(prev => [...prev, diagMsg]);
+    } catch (e: any) {
+      const msg = `Diagnostics error: ${String(e?.message || e)}`;
+      setDiagStatus(msg);
+      const diagMsg: Message = { id: Date.now(), text: msg, sender: 'assistant', timestamp: new Date().toLocaleTimeString() };
+      setMessages(prev => [...prev, diagMsg]);
     }
   };
 
@@ -621,10 +655,16 @@ export default function Home() {
       if (response.ok) {
         const data = await response.json();
         // Be robust to different payload shapes; fall back if empty
+        const backendError = (data && (data.error || data?.error?.message)) as string | undefined;
         const rawText: string = (data && (data.response || data.content || data.message)) || "";
-        const finalText = rawText && rawText.trim().length > 0
-          ? rawText
-          : (data?.error ? `Sorry, there was an issue: ${String(data.error)}` : "I'm sorry, I couldn't generate a response right now. Please try again.");
+        let finalText = rawText && rawText.trim().length > 0 ? rawText : "";
+        // If backend reports an error (e.g., invalid_api_key), show a generic message
+        if (!finalText && backendError) {
+          finalText = "I'm having trouble connecting to my medical knowledge source right now. Please try again in a moment.";
+        }
+        if (!finalText) {
+          finalText = "I'm sorry, I couldn't generate a response right now. Please try again.";
+        }
         const citations = extractCitations(finalText);
         const assistantResponse: Message = {
           id: Date.now() + 1,
@@ -899,6 +939,13 @@ export default function Home() {
             </span>
             <span className={`w-3 h-3 ${statusDisplay.dotColor} rounded-full ${connectionStatus === "connecting" ? "animate-pulse" : ""}`} />
             <span className="text-sm text-gray-600">{statusDisplay.text}</span>
+            <button
+              onClick={runDiagnostics}
+              className="ml-2 px-2 py-1 text-[11px] bg-gray-100 text-gray-800 rounded hover:bg-gray-200"
+              title="Run connectivity diagnostics"
+            >
+              Check
+            </button>
           </div>
         </header>
 
