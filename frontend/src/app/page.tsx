@@ -224,7 +224,9 @@ export default function Home() {
     out = out.replace(/https?:\/\/\S+/g, "");
     out = out.replace(/\[([^\]]+)\]\(([^)]+)\)/g, "$1");
     out = out.replace(/\n{3,}/g, "\n\n");
-    return out.trim();
+    const trimmed = out.trim();
+    // If sanitization removed everything, fall back to original text
+    return trimmed.length > 0 ? trimmed : text;
   };
 
 
