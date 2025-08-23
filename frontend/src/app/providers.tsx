@@ -1,9 +1,8 @@
 "use client";
 
-import { SessionProvider } from "next-auth/react";
-
+// Auth disabled: render children directly without SessionProvider
 export default function Providers({ children }: { children: React.ReactNode }) {
-  return <SessionProvider>{children}</SessionProvider>;
+  return <>{children}</>;
 }
 
 
