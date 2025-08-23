@@ -646,6 +646,9 @@ async def chat_endpoint(chat_message: ChatMessage, request: Request):
     if not check_rate_limit(f"chat:{client_ip}", CHAT_LIMIT_PER_MINUTE):
         raise HTTPException(status_code=429, detail="Rate limit exceeded. Please wait and try again.")
 
+    # Default category to a safe value; will be refined below.
+    question_category = "HEALTH_QUESTION"
+
     try:
         # Optional: redact incoming message for demo privacy if toggled
         original_message = chat_message.message
@@ -884,7 +887,8 @@ async def chat_endpoint(chat_message: ChatMessage, request: Request):
                 final_response = compiled_health_graph.invoke({"messages": messages_with_system})
                 final_message = final_response["messages"][-1]
                 final_response_content = final_message.content.replace("**", "").replace("*", "")
-                
+                # Set fallback category appropriately
+                question_category = "FOLLOW_UP" if len(messages) > 1 else "HEALTH_QUESTION"
                 # Clean response (keeping original functionality)
             else:
                 # Non-health question
@@ -892,6 +896,7 @@ async def chat_endpoint(chat_message: ChatMessage, request: Request):
                 topic_words = [word for word in words if len(word) > 2 and word not in ["explain", "about", "tell", "me", "what", "is", "the"]]
                 topic_text = " ".join(topic_words[:3]) if topic_words else "this topic"
                 final_response_content = f"I'm your Personal Health Copilot, designed specifically to help with health and medical questions. I can assist you with symptoms, treatments, medications, lab results, and general health advice. Unfortunately, I cannot provide information about {topic_text} or other non-health topics, as I'm focused on medical and health-related assistance. How can I help with your health today?"
+                question_category = "NON_HEALTH_QUESTION"
         
         # Simulate agent activity for real-time display (only for health questions)
         activities = []
