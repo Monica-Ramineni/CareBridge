@@ -995,6 +995,8 @@ async def chat_endpoint(chat_message: ChatMessage, request: Request):
             ]
         
         triage = classify_triage_level(chat_message.message, lab_context)
+        # Agent-driven suggestion for showing triage banner: default true for health/follow-up/resumption
+        triage_display = question_category in ["HEALTH_QUESTION", "FOLLOW_UP", "CONVERSATION_RESUMPTION"]
         # Minimal audit trail
         _audit_log("chat", request, extra={"redacted": (GDPR_MODE or COMPLIANCE_MODE), "msg_len": len(original_message or "")})
         sources = _parse_markdown_links(final_response_content)
@@ -1008,6 +1010,7 @@ async def chat_endpoint(chat_message: ChatMessage, request: Request):
             "triage": triage,
             "sources": sources,
             "classification": question_category,
+            "triage_display": triage_display,
         }
         # Store in cache
         _cache_set(cache_key, response_payload)

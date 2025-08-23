@@ -25,6 +25,7 @@ interface Message {
     | "NON_HEALTH_QUESTION"
     | "GREETING"
     | "CONVERSATION_RESUMPTION";
+  triage_display?: boolean;
 }
 
 interface Conversation {
@@ -682,6 +683,7 @@ export default function Home() {
           cost: data.cost || undefined,
           latency: typeof data.latency === 'number' ? data.latency : undefined,
           classification: data.classification as Message['classification'] | undefined,
+          triage_display: typeof data.triage_display === 'boolean' ? data.triage_display : undefined,
         };
         const finalMessages = [...updatedMessages, assistantResponse];
         setMessages(finalMessages);
@@ -965,9 +967,9 @@ export default function Home() {
               const showTriage = message.sender === 'assistant'
                 && !!message.triage
                 && (
+                  (typeof message.triage_display === 'boolean' && message.triage_display) ||
                   message.classification === 'HEALTH_QUESTION' ||
                   message.classification === 'FOLLOW_UP' ||
-                  // Fallback to previous heuristic if classification missing
                   (!message.classification && !isGreetingMessage(previousUserText) && isLikelyHealthRelated(previousUserText))
                 );
               const triage = message.triage;
