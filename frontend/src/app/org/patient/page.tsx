@@ -40,6 +40,30 @@ export default function PatientPage() {
       .catch(() => {});
   }, [activePatientId]);
 
+  // Fallback plan generator (UI-only) to avoid empty plan sections
+  const buildFallbackPlan = (demo: any): string[] => {
+    if (!demo) return [];
+    const problemsText = ((demo.problems || []) as string[]).join(" ").toLowerCase();
+    const plan: string[] = [];
+    if (!problemsText) return plan;
+    plan.push("Continue current medications as prescribed.");
+    if (problemsText.includes("diabetes")) {
+      plan.push("Monitor blood glucose regularly; follow diet and exercise guidance.");
+    }
+    if (problemsText.includes("hypertension")) {
+      plan.push("Monitor blood pressure at home; reduce sodium and follow lifestyle changes.");
+    }
+    if (problemsText.includes("asthma")) {
+      plan.push("Use rescue inhaler as directed; review triggers and inhaler technique.");
+    }
+    const labs = demo.last_labs || {};
+    if (labs && Object.keys(labs).length) {
+      plan.push("Recheck relevant labs as advised.");
+    }
+    plan.push("Schedule follow-up to reassess.");
+    return plan;
+  };
+
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold text-gray-900 mb-4">Patient Dashboard</h1>
@@ -158,7 +182,9 @@ export default function PatientPage() {
               <div>
                 <div className="font-semibold">Plan</div>
                 <ul className="list-disc pl-5">
-                  {(summary.plan || []).map((p: string, i: number) => (<li key={`pl-${i}`}>{p}</li>))}
+                  {(summary.plan || []).map((p: string, i: number) => (
+                    <li key={`pl-${i}`}>{p}</li>
+                  ))}
                 </ul>
               </div>
             </div>

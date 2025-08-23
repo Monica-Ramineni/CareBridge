@@ -1181,7 +1181,9 @@ async def patient_summary(payload: PatientSummaryRequest):
 
         json_instruction = (
             "Return a concise JSON object with keys: problems (array of strings), medications (array of strings), "
-            "labs (object with 'flags' array and 'notes' array), and plan (array of strings)."
+            "labs (object with 'flags' array and 'notes' array), and plan (array of strings). "
+            "Use ONLY the information provided in the conversation context. Do NOT invent symptoms or diagnoses. "
+            "ALWAYS include a non-empty plan with 3-5 conservative, general actions that are appropriate to the problems/labs."
         )
 
         summary_prompt = f"""
@@ -1204,11 +1206,34 @@ async def patient_summary(payload: PatientSummaryRequest):
             end = content.rfind("}")
             parsed = json.loads(content[start:end+1]) if start != -1 and end != -1 else {}
 
+        problems = parsed.get("problems", []) or []
+        medications = parsed.get("medications", []) or []
+        labs_obj = parsed.get("labs", {}) or {}
+        plan_list = parsed.get("plan", []) or []
+
+        # If plan is empty, derive a conservative plan ONLY from the provided context
+        if not plan_list:
+            try:
+                # Build a text blob from conversation history (frontend sends Snapshot lines)
+                blob = "\n".join([m.text for m in payload.conversation_history or []]).lower()
+                plan_list = ["Continue current medications as prescribed."]
+                if "diabetes" in blob:
+                    plan_list.append("Monitor blood glucose regularly; follow diet and exercise advice.")
+                if "hypertension" in blob or "blood pressure" in blob:
+                    plan_list.append("Monitor blood pressure; reduce sodium; follow lifestyle guidance.")
+                if "asthma" in blob:
+                    plan_list.append("Use rescue inhaler as directed; review triggers and inhaler technique.")
+                if "last labs" in blob or "a1c" in blob or "ldl" in blob or "crp" in blob or "spirometry" in blob:
+                    plan_list.append("Recheck relevant labs at the recommended interval.")
+                plan_list.append("Schedule follow-up to reassess.")
+            except Exception:
+                plan_list = ["Continue current medications as prescribed.", "Schedule follow-up to reassess."]
+
         return PatientSummaryResponse(
-            problems=parsed.get("problems", []),
-            medications=parsed.get("medications", []),
-            labs=parsed.get("labs", {}),
-            plan=parsed.get("plan", []),
+            problems=problems,
+            medications=medications,
+            labs=labs_obj,
+            plan=plan_list,
         )
     except Exception:
         return PatientSummaryResponse()
