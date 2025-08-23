@@ -195,6 +195,19 @@ export default function Home() {
     return citations;
   };
 
+  // Basic topic terms from user text (stopword-filtered) to filter off-topic citations
+  const extractKeyTerms = (text: string): string[] => {
+    const stop = new Set([
+      'the','a','an','and','or','but','if','then','with','without','of','on','in','to','for','about','is','are','was','were','be','been','being','i','you','we','they','he','she','it','this','that','these','those','what','why','how','does','do','can','should','would','could','please','tell','me'
+    ]);
+    return (text || '')
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, ' ')
+      .split(/\s+/)
+      .filter(t => t && !stop.has(t) && t.length >= 4)
+      .slice(0, 6);
+  };
+
   // Detect greetings/non-health trivial inputs to suppress triage UI
   const isGreetingMessage = (text: string): boolean => {
     if (!text) return false;
@@ -672,7 +685,19 @@ export default function Home() {
         if (!finalText) {
           finalText = "I'm sorry, I couldn't generate a response right now. Please try again.";
         }
-        const citations = extractCitations(finalText);
+        let citations = extractCitations(finalText);
+        // Filter out off-topic citations based on user key terms
+        try {
+          const terms = extractKeyTerms(newMessage.text);
+          if (terms.length && citations.length) {
+            const matchesTopic = (c: Citation) => {
+              const blob = `${c.text} ${c.url}`.toLowerCase();
+              return terms.some(t => blob.includes(t));
+            };
+            const filtered = citations.filter(matchesTopic);
+            if (filtered.length) citations = filtered;
+          }
+        } catch (_) {}
         const assistantResponse: Message = {
           id: Date.now() + 1,
           text: finalText,
