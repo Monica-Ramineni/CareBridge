@@ -1,22 +1,13 @@
-import NextAuth from "next-auth";
-import GitHub from "next-auth/providers/github";
+// Auth temporarily disabled in production build to avoid /api/auth errors on Vercel.
+// Keeping this file returns 204s so clients don't error if they still call /api/auth/*.
+import { NextResponse } from "next/server";
 
-// Make providers safe in local dev without GitHub envs
-const providers = [] as any[];
-if (process.env.GITHUB_ID && process.env.GITHUB_SECRET) {
-  providers.push(
-    GitHub({
-      clientId: process.env.GITHUB_ID,
-      clientSecret: process.env.GITHUB_SECRET,
-    })
-  );
+export async function GET() {
+  return new NextResponse(null, { status: 204 });
 }
 
-const handler = NextAuth({
-  providers,
-  session: { strategy: "jwt" },
-});
-
-export { handler as GET, handler as POST };
+export async function POST() {
+  return new NextResponse(null, { status: 204 });
+}
 
 

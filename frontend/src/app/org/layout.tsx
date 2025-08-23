@@ -1,5 +1,5 @@
 "use client";
-import { signIn, signOut } from "next-auth/react";
+// Auth temporarily disabled in production; remove next-auth buttons
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 
@@ -24,8 +24,7 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
           <span className="hidden sm:inline px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-700 border border-gray-200">
             No PHI stored
           </span>
-          <button onClick={() => signIn("github")} className="px-3 py-2 text-sm bg-gray-100 text-gray-800 rounded hover:bg-gray-200 mr-2">Sign in</button>
-          <button onClick={() => signOut({ callbackUrl: "/" })} className="px-3 py-2 text-sm bg-gray-100 text-gray-800 rounded hover:bg-gray-200">Sign out</button>
+          {/* Auth controls disabled for now */}
         </div>
       </header>
       <main className="flex-1">{children}</main>
