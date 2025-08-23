@@ -17,6 +17,9 @@
 /.next/
 /out/
 
+# Do not deploy any disabled API routes
+/src/app/api_disabled/
+
 # production
 /build
 
