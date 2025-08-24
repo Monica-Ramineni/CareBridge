@@ -32,11 +32,10 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
               <summary className="list-none cursor-pointer rounded-full w-8 h-8 bg-gray-100 border border-gray-200 flex items-center justify-center text-gray-700 hover:bg-gray-200" aria-label="Profile">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><path fillRule="evenodd" d="M12 2.25a5.25 5.25 0 100 10.5 5.25 5.25 0 000-10.5zM4.5 20.25a7.5 7.5 0 0115 0v.75a.75.75 0 01-.75.75h-13.5a.75.75 0 01-.75-.75v-.75z" clipRule="evenodd" /></svg>
               </summary>
-              <div className="absolute right-0 mt-2 w-44 bg-white border border-gray-200 rounded shadow-md z-10 text-sm">
-                <a href="/api/auth/signin/github?callbackUrl=/org/patient" className="block px-3 py-2 hover:bg-gray-50">Sign in with GitHub</a>
+              <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded shadow-md z-10 text-sm">
+                <a href="/api/auth/signin/github?callbackUrl=/org/patient" className="block px-3 py-2 text-gray-800 font-medium hover:bg-gray-50">Sign in with GitHub</a>
                 <div className="border-t border-gray-200" />
-                <a href="/org/settings" className="block px-3 py-2 hover:bg-gray-50">Settings</a>
-                <a href="/api/auth/signout?callbackUrl=/" className="block px-3 py-2 hover:bg-gray-50">Sign out</a>
+                <a href="/api/auth/signout?callbackUrl=/" className="block px-3 py-2 text-gray-800 font-medium hover:bg-gray-50">Sign out</a>
               </div>
             </details>
           )}
