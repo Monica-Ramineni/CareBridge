@@ -57,6 +57,8 @@ export default function Home() {
   const [copiedRefsFor, setCopiedRefsFor] = useState<number | null>(null);
   const [debugMode, setDebugMode] = useState(false);
   const [diagStatus, setDiagStatus] = useState<string>("");
+  const [isSignedIn, setIsSignedIn] = useState(false);
+  const chatTimesRef = useRef<number[]>([]); // client-side rate limit timestamps
 
   // Add loading message cycling
   const loadingMessages = [
@@ -140,6 +142,37 @@ export default function Home() {
       }
     }
   }, [isClient]);
+
+  // Detect signed-in status (SSO) and restore local-only state for signed-in guests
+  useEffect(() => {
+    const checkSessionAndRestore = async () => {
+      try {
+        if (process.env.NEXT_PUBLIC_ENABLE_SSO !== 'true') return;
+        const res = await fetch('/api/auth/session');
+        const data = await res.json().catch(() => ({}));
+        const signed = !!data && !!data.user;
+        setIsSignedIn(signed);
+        // Resume last chat (local only) when signed in
+        if (signed) {
+          const saved = localStorage.getItem('cb_last_chat_signed');
+          if (saved) {
+            try {
+              const parsed: Message[] = JSON.parse(saved);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                setMessages(parsed);
+              }
+            } catch (_) {}
+          }
+          // Restore lab session id
+          const savedSession = localStorage.getItem('cb_lab_session_signed');
+          if (savedSession) setSessionId(savedSession);
+        }
+      } catch (_) {
+        setIsSignedIn(false);
+      }
+    };
+    checkSessionAndRestore();
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -600,6 +633,12 @@ export default function Home() {
         const data = await response.json();
         setSessionId(data.session_id);
         setUploadedFiles(Array.from(files));
+        // Persist lab session for signed-in users (local only)
+        try {
+          if (isSignedIn) {
+            localStorage.setItem('cb_lab_session_signed', data.session_id);
+          }
+        } catch (_) {}
         
         // Add a system message about uploaded files
         const uploadMessage: Message = {
@@ -629,6 +668,25 @@ export default function Home() {
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputMessage.trim()) return;
+
+    // Client-side rate limit (per minute); signed-in users get higher allowance
+    const now = Date.now();
+    const windowMs = 60 * 1000;
+    const maxPerMinute = isSignedIn ? 40 : 20;
+    chatTimesRef.current = chatTimesRef.current.filter(t => now - t < windowMs);
+    if (chatTimesRef.current.length >= maxPerMinute) {
+      const limitMsg: Message = {
+        id: Date.now() + 2,
+        text: isSignedIn 
+          ? 'Please wait a moment before sending more messages.'
+          : 'Rate limit reached. Sign in to get a higher message limit.',
+        sender: 'assistant',
+        timestamp: new Date().toLocaleTimeString()
+      };
+      setMessages(prev => [...prev, limitMsg]);
+      return;
+    }
+    chatTimesRef.current.push(now);
 
     const newMessage: Message = {
       id: messages.length + 1,
@@ -712,6 +770,12 @@ export default function Home() {
         };
         const finalMessages = [...updatedMessages, assistantResponse];
         setMessages(finalMessages);
+        // Persist last chat locally for signed-in users only (no server storage)
+        try {
+          if (isSignedIn) {
+            localStorage.setItem('cb_last_chat_signed', JSON.stringify(finalMessages.slice(-200)));
+          }
+        } catch (_) {}
       } else {
         throw new Error('Failed to get response');
       }
