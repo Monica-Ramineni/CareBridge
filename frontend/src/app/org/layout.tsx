@@ -23,9 +23,6 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
           <Link href="/org/provider" className={`px-3 py-2 rounded ${isProvider ? 'bg-blue-600 text-white hover:bg-blue-700' : 'hover:bg-gray-100 text-gray-700'}`}>Provider</Link>
         </nav>
         <div className="ml-auto pl-4 flex items-center gap-2">
-          <span className="hidden sm:inline px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-700 border border-gray-200">
-            No PHI stored
-          </span>
           {/* Profile menu (SSO-gated) */}
           {process.env.NEXT_PUBLIC_ENABLE_SSO === 'true' && (
             <details className="relative">
