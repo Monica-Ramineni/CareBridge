@@ -104,7 +104,7 @@ export default function PatientPage() {
       <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
         <section className="bg-white border border-gray-200 rounded-lg p-4">
           <h2 className="font-semibold text-gray-900 mb-2">Patient Summary</h2>
-          <p className="text-xs text-gray-600 mb-2">Optional context to guide the summary (e.g., recent symptoms or concerns).</p>
+          <p className="text-xs text-gray-600 mb-2">Add any additional symptoms, changes, concerns, if any.</p>
           <textarea
             className="w-full border border-gray-300 rounded px-2 py-1 text-sm mb-2 text-gray-900 placeholder-gray-600"
             rows={3}
