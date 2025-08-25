@@ -1036,8 +1036,7 @@ export default function Home() {
             <span className="hidden sm:inline px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-700 mr-2 border border-gray-200">
               No PHI stored
             </span>
-            <span className={`w-3 h-3 ${statusDisplay.dotColor} rounded-full ${connectionStatus === "connecting" ? "animate-pulse" : ""}`} />
-            <span className="text-sm text-gray-600">{statusDisplay.text}</span>
+            {/* Online indicator removed for guest mode */}
             {showDiagnostics && (
               <button
                 onClick={runDiagnostics}
